@@ -153,13 +153,21 @@ fold first more combine = do
   bs <- many more
   return $ foldl combine a bs
 
-_type = lexeme $ choice [ arrayType, functionType, constructorType ]
+_type = lexeme $ choice [ unionType, functionType, constructorType ]
   where
+  unionType = do
+    t1 <- arrayType
+    munion <- optionMaybe (lexeme (string "|"))
+    case munion of
+      Nothing -> return t1
+      Just _ -> UnionType t1 <$> unionType
   arrayType = fold atomicType (squares whiteSpace) (flip $ const ArrayType)
+  -- unionType = UnionType <$> sepBy1 atomicType (lexeme (string "|"))
   atomicType = choice $ map try
     [ Predefined <$> predefinedType
     , TypeReference <$> typeRef
     , ObjectType <$> objectType
+    , TupleType <$> squares (_type `sepBy` lexeme (string ","))
     ]
   functionType = FunctionType <$> optionMaybe typeParameters <*> parens parameterList <*> returnType
   constructorType = ConstructorType <$> (reserved "new" *> optionMaybe typeParameters) <*> parens parameterList <*> returnType

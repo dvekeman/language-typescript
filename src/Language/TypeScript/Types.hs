@@ -103,6 +103,8 @@ data Type
   | TypeReference TypeRef
   | ObjectType TypeBody
   | ArrayType Type
+  | UnionType Type Type
+  | TupleType [Type]
   | FunctionType (Maybe [TypeParameter]) [Parameter] Type
   | ConstructorType (Maybe [TypeParameter]) [Parameter] Type
   deriving (Show, Data, Typeable)
