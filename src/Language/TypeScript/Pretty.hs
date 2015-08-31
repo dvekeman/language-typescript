@@ -59,6 +59,9 @@ declarationElement (AmbientDeclaration _ e a) =
   renderMaybe exported e
   <+> text "declare"
   <+> renderAmbientDeclaration a
+declarationElement (TypeAliasDeclaration _ e a) =
+  renderMaybe exported e
+  <+> renderTypeAlias a
 
 renderAmbientDeclaration :: Ambient -> Doc
 renderAmbientDeclaration (AmbientVariableDeclaration _ name ty) =
@@ -91,6 +94,8 @@ renderAmbientDeclaration (AmbientExternalModuleDeclaration _ name es) =
   text "module"
   <+> stringLiteral name
   <+> braces (vcat (map renderAmbientExternalModuleElement es))
+renderAmbientDeclaration (AmbientTypeAliasDeclaration a) =
+  renderTypeAlias a
 
 renderAmbientExternalModuleElement :: AmbientExternalModuleElement -> Doc
 renderAmbientExternalModuleElement (AmbientModuleElement a) = renderAmbientDeclaration a
@@ -130,6 +135,13 @@ renderIndexSignature (IndexSignature s sn ty) =
   <+> colon
   <+> stringOrNumber sn
   <+> typeAnnotation ty
+
+renderTypeAlias :: TypeAlias -> Doc
+renderTypeAlias (TypeAlias _ name ty) =
+  text "type"
+  <+> text name
+  <+> text "="
+  <+> _type ty
 
 dot :: Doc
 dot = char '.'

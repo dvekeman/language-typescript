@@ -42,6 +42,7 @@ exported = reserved "export" >> return Exported
 
 declarationElement = choice $ map try
   [ InterfaceDeclaration <$> commentPlaceholder <*> optionMaybe exported <*> interface
+  , TypeAliasDeclaration <$> commentPlaceholder <*> optionMaybe exported <*> typeAlias
   , ExportDeclaration <$> (reserved "export" >> lexeme (char '=') *> identifier)
   , ExternalImportDeclaration <$> optionMaybe exported <*> (reserved "import" *> identifier) <*> (lexeme (char '=') *> reserved "require" *> parens stringLiteral <* semi)
   , ImportDeclaration <$> optionMaybe exported <*> (reserved "import" *> identifier) <*> (lexeme (char '=') *> entityName)
@@ -53,6 +54,7 @@ ambientDeclaration = choice (map try
   , ambientFunctionDeclaration
   , ambientClassDeclaration
   , ambientInterfaceDeclaration
+  , ambientTypeAliasDeclaration
   , ambientEnumDeclaration
   , ambientModuleDeclaration
   , ambientExternalModuleDeclaration
@@ -69,6 +71,8 @@ ambientInterfaceDeclaration = AmbientInterfaceDeclaration <$> interface
 ambientEnumDeclaration = AmbientEnumDeclaration <$> commentPlaceholder <*> (reserved "enum" *> identifier) <*> braces (sepEndBy enumMember comma)
   where
   enumMember = (,) <$> propertyName <*> optionMaybe (lexeme (char '=') >> integer)
+
+ambientTypeAliasDeclaration = AmbientTypeAliasDeclaration <$> typeAlias
 
 ambientModuleDeclaration = AmbientModuleDeclaration <$> commentPlaceholder <*> (reserved "module" *> sepBy identifier dot) <*> braces (many ambientDeclaration)
 
@@ -98,6 +102,8 @@ ambientMemberDeclaration = AmbientMemberDeclaration <$> optionMaybe publicOrPriv
 ambientIndexSignature = AmbientIndexSignature <$> indexSignature
 
 interface = Interface <$> commentPlaceholder <*> (reserved "interface" *> identifier) <*> optionMaybe typeParameters <*> optionMaybe extendsClause <*> objectType
+
+typeAlias = TypeAlias <$> commentPlaceholder <*> (reserved "type" *> identifier) <*> (lexeme (char '=') *> _type <* semi)
 
 extendsClause = reserved "extends" >> classOrInterfaceTypeList
 

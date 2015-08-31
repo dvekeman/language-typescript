@@ -34,6 +34,7 @@ type CommentPlaceholder = Either (Int, Int) Comment
 data DeclarationElement
   = InterfaceDeclaration CommentPlaceholder (Maybe Exported) Interface
   | ImportDeclaration (Maybe Exported) String EntityName
+  | TypeAliasDeclaration CommentPlaceholder (Maybe Exported) TypeAlias
   | ExportDeclaration String
   | ExternalImportDeclaration (Maybe Exported) String String
   | AmbientDeclaration CommentPlaceholder (Maybe Exported) Ambient
@@ -45,12 +46,15 @@ data EntityName = EntityName (Maybe ModuleName) String deriving (Show, Data, Typ
 
 data Interface = Interface CommentPlaceholder String (Maybe [TypeParameter]) (Maybe [TypeRef]) TypeBody deriving (Show, Data, Typeable)
 
+data TypeAlias = TypeAlias CommentPlaceholder String Type deriving (Show, Data, Typeable)
+
 data Ambient
   = AmbientVariableDeclaration CommentPlaceholder String (Maybe Type)
   | AmbientFunctionDeclaration CommentPlaceholder String ParameterListAndReturnType
   | AmbientClassDeclaration CommentPlaceholder String (Maybe [TypeParameter]) (Maybe [TypeRef]) (Maybe [TypeRef]) [(CommentPlaceholder, AmbientClassBodyElement)]
   | AmbientInterfaceDeclaration Interface
   | AmbientEnumDeclaration CommentPlaceholder String [(String, Maybe Integer)]
+  | AmbientTypeAliasDeclaration TypeAlias
   | AmbientModuleDeclaration CommentPlaceholder [String] [Ambient]
   | AmbientExternalModuleDeclaration CommentPlaceholder String [AmbientExternalModuleElement]
   deriving (Show, Data, Typeable)
