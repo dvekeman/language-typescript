@@ -34,7 +34,9 @@ nextIdentifier =
     >> choice (map (try . reserved) [ "var", "function", "class", "interface", "enum", "module" ])
     >> identifier
 
-declarationSourceFile = whiteSpace >> many declarationElement <* eof
+declarationSourceFile = stripBOM >> whiteSpace >> many declarationElement <* eof
+
+stripBOM = optional (char '\65279')
 
 exported = reserved "export" >> return Exported
 
