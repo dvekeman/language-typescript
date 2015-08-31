@@ -252,17 +252,30 @@ _type (ArrayType t) = _type t <+> text "[]"
 _type (Predefined p) = predefinedType p
 _type (TypeReference r) = typeRef r
 _type (ObjectType o) = objectType o
-_type (FunctionType ps pl ret) =
+-- TSS(3.7): Parentheses are required around union, function, or
+-- constructor types when they are used as array element types, and
+-- parentheses are required around function or constructor types in
+-- union types.
+--
+-- NOTE: instead of implementing this logic, just putting parens
+-- around everything.
+_type (FunctionType ps pl ret) = parens $
   renderMaybe typeParameters ps
   <+> parens (parameterList pl)
   <+> text "=>"
   <+> _type ret
-_type (ConstructorType ps pl ret) =
+_type (ConstructorType ps pl ret) = parens $
   text "new"
   <+> renderMaybe typeParameters ps
   <+> parens (parameterList pl)
   <+> text "=>"
   <+> _type ret
+_type (UnionType t1 t2) = parens $
+  _type t1
+  <+> text "|"
+  <+> _type t2
+_type (TupleType ts) = brackets $
+  commaSep _type ts
 
 typeRef :: TypeRef -> Doc
 typeRef (TypeRef n as) =
