@@ -46,8 +46,6 @@ declarationElement = choice $ map try
   [ InterfaceDeclaration <$> commentPlaceholder <*> optionMaybe exported <*> interface
   , TypeAliasDeclaration <$> commentPlaceholder <*> optionMaybe exported <*> typeAlias
   , ExportDeclaration <$> (reserved "export" >> lexeme (char '=') *> identifier)
-  , ExternalImportDeclaration <$> optionMaybe exported <*> (reserved "import" *> identifier) <*> (lexeme (char '=') *> reserved "require" *> parens stringLiteral <* semi)
-  , ImportDeclaration <$> optionMaybe exported <*> (reserved "import" *> identifier) <*> (lexeme (char '=') *> entityName)
   , AmbientDeclaration <$> commentPlaceholder <*> optionMaybe exported <*> (reserved "declare" *> ambientDeclaration)
   ]
 
@@ -60,7 +58,14 @@ ambientDeclaration = choice (map try
   , ambientEnumDeclaration
   , ambientModuleDeclaration
   , ambientExternalModuleDeclaration
+  , ambientExternalImportDeclaration
+  , ambientImportDeclaration
   ])
+
+-- Ignore 'export' keyword, because:
+--
+-- TSS(12.1.15) Except for ImportDeclarations, AmbientModuleElements always declare exported entities regardless of
+-- whether they include the optional export modifier.
 
 ambientVariableDeclaration = AmbientVariableDeclaration <$> commentPlaceholder <*> (reserved "var" *> identifier) <*> (optionMaybe typeAnnotation <* semi)
 
@@ -76,28 +81,43 @@ ambientEnumDeclaration = AmbientEnumDeclaration <$> commentPlaceholder <*> optio
 
 ambientTypeAliasDeclaration = AmbientTypeAliasDeclaration <$> typeAlias
 
-ambientModuleDeclaration = AmbientModuleDeclaration <$> commentPlaceholder <*> (reserved "module" *> sepBy identifier dot) <*> braces (many ambientDeclaration)
+-- "optional" keyword is ignored below:
+--
+-- TSS(12.1.5) Except for ImportDeclarations, AmbientModuleElements
+-- always declare exported entities regardless of whether they include
+-- the optional export modifier.
+--
+-- TSS(12.2) If an ambient external module declaration contains no
+-- export assignment, entities dñeclared in the module are exported
+-- regardless of whether their declarations include the optional
+-- export modifier.
+
+ambientModuleDeclaration = AmbientModuleDeclaration <$> commentPlaceholder <*> (reserved "module" *> sepBy identifier dot) <*> braces (many (optionMaybe exported *> ambientDeclaration))
 
 ambientExternalModuleDeclaration = AmbientExternalModuleDeclaration <$> commentPlaceholder <*> (reserved "module" *> stringLiteral) <*> braces (many ambientExternalModuleElement)
 
 ambientExternalModuleElement = choice (map try
-  [ AmbientModuleElement <$> ambientDeclaration
-  , exportAssignment
-  , externalImportDeclaration ])
+  [ AmbientModuleElement <$> (optionMaybe exported *> ambientDeclaration)
+  , exportAssignment ])
 
-exportAssignment = ExportAssignment <$> (reserved "export" *> lexeme (char '=') *> identifier <* semi)
+ambientImportDeclaration =
+  AmbientImportDeclaration <$> commentPlaceholder
+                           <*> (reserved "import" *> identifier)
+                           <*> (lexeme (char '=') *> entityName <* semi)
 
-externalImportDeclaration =
-  AmbientModuleExternalImportDeclaration <$> optionMaybe exported
-                                         <*> (reserved "import" *> identifier)
-                                         <*> (lexeme (char '=') *> reserved "require" *> stringLiteral)
+ambientExternalImportDeclaration =
+  AmbientExternalImportDeclaration <$> commentPlaceholder
+                                   <*> (reserved "import" *> identifier)
+                                   <*> (lexeme (char '=') *> reserved "require" *> parens stringLiteral <* semi)
+
+exportAssignment = ExportAssignment <$> (optionMaybe exported *> lexeme (char '=') *> identifier <* semi)
 
 ambientClassBodyElement = (,) <$> commentPlaceholder <*> (choice $ map try
   [ ambientConstructorDeclaration
   , ambientMemberDeclaration
   , ambientIndexSignature ])
 
-ambientConstructorDeclaration = AmbientConstructorDeclaration <$> (reserved "constructor" *> parameterList <* semi)
+ambientConstructorDeclaration = AmbientConstructorDeclaration <$> (reserved "constructor" *> parameterList)
 
 ambientMemberDeclaration = AmbientMemberDeclaration <$> optionMaybe publicOrPrivate <*> optionMaybe static <*> propertyName <*> choice [fmap Right parameterListAndReturnType, fmap Left (optionMaybe typeAnnotation)]
 

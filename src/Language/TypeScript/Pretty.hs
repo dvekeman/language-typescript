@@ -38,23 +38,10 @@ declarationElement :: DeclarationElement -> Doc
 declarationElement (InterfaceDeclaration _ e i) =
   renderMaybe exported e
   <+> interface i
-declarationElement (ImportDeclaration e name entityName) =
-  renderMaybe exported e
-  <+> text "import"
-  <+> text name
-  <+> char '='
-  <+> renderEntityName entityName
 declarationElement (ExportDeclaration name) =
   exported Exported
   <+> text "="
   <+> text name
-declarationElement (ExternalImportDeclaration e name imp) =
-  renderMaybe exported e
-  <+> text "import"
-  <+> text name
-  <+> char '='
-  <+> text "require"
-  <+> stringLiteral imp
 declarationElement (AmbientDeclaration _ e a) =
   renderMaybe exported e
   <+> text "declare"
@@ -97,6 +84,17 @@ renderAmbientDeclaration (AmbientExternalModuleDeclaration _ name es) =
   <+> braces (vcat (map renderAmbientExternalModuleElement es))
 renderAmbientDeclaration (AmbientTypeAliasDeclaration a) =
   renderTypeAlias a
+renderAmbientDeclaration (AmbientImportDeclaration _ name entityName) =
+  text "import"
+  <+> text name
+  <+> char '='
+  <+> renderEntityName entityName
+renderAmbientDeclaration (AmbientExternalImportDeclaration _ name imp) =
+  text "import"
+  <+> text name
+  <+> char '='
+  <+> text "require"
+  <+> stringLiteral imp
 
 renderAmbientExternalModuleElement :: AmbientExternalModuleElement -> Doc
 renderAmbientExternalModuleElement (AmbientModuleElement a) = renderAmbientDeclaration a
@@ -105,13 +103,6 @@ renderAmbientExternalModuleElement (ExportAssignment name) =
   <+> char '='
   <+> text name
   <+> semi
-renderAmbientExternalModuleElement (AmbientModuleExternalImportDeclaration e name imp) =
-  renderMaybe exported e
-  <+> text "import"
-  <+> text name
-  <+> char '='
-  <+> text "require"
-  <+> stringLiteral imp
 
 renderAmbientClassBodyElement :: AmbientClassBodyElement -> Doc
 renderAmbientClassBodyElement (AmbientConstructorDeclaration ps) =
