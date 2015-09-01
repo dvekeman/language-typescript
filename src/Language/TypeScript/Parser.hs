@@ -25,6 +25,8 @@ import Text.Parsec.Expr
 import Text.Parsec.String (parseFromFile)
 import Control.Applicative
        (Applicative(..), (<$>), (<*>), (<*), (*>))
+import Data.Char (digitToInt, isHexDigit)
+import Data.Char.Properties.Misc (isIDStart, isIDContinue)
 
 commentPlaceholder = fmap toOffset getPosition where
   toOffset pos = Left $ (sourceLine pos, sourceColumn pos)
@@ -141,7 +143,16 @@ typeBody = TypeBody <$> sepEndBy typeMember semi
 
 propertySignature = PropertySignature <$> propertyName <*> optionMaybe (lexeme (char '?' >> return Optional)) <*> optionMaybe typeAnnotation
 
-propertyName = identifier <|> stringLiteral
+propertyName = identifier <|> stringLiteral <|> numericLiteral
+
+numericLiteral =
+  (show <$> try decimal) <|>
+  (show <$> try binary) <|>
+  (show <$> try hexadecimal) <|>
+  (show <$> try octal)
+  where
+    binary = do { oneOf "bB"; number 2 binDigit }
+    binDigit = satisfy (`elem` ['0', '1']) <?> "binary digit"
 
 typeAnnotation = colon >> _type
 
@@ -234,3 +245,74 @@ typeName = fmap toTypeName (sepBy1 identifier dot)
   toTypeName ts = TypeName (Just $ ModuleName $ init ts) (last ts)
 
 typeArguments = angles $ commaSep1 _type
+
+stringLiteral = lexeme $ do
+    c0 <- oneOf "'\""
+    case c0 of
+      '\'' -> go True
+      '"' -> go False
+      _ -> error "impossible case in stringLiteral"
+  where
+    --FIXME: handle line continuations / terminators? meh
+    go isSingle = do
+      ch0 <- anyChar
+      case (ch0, isSingle) of
+        ('\'', True) -> return []
+        ('"', False) -> return []
+        ('\'', False) -> fail "Unexpected single quote in double quoted string"
+        ('"', True) -> fail "Unexpected double quote in single quoted string"
+        ('\\', _) -> do
+          ch <- anyChar
+          r <- case ch of
+            '\'' -> return '\''
+            '"' -> return '"'
+            '\\' -> return '\\'
+            'b' -> return '\b'
+            'f' -> return '\f'
+            'n' -> return '\n'
+            'r' -> return '\r'
+            't' -> return '\t'
+            'v' -> return '\v'
+            '0' -> return '\NUL'
+            'x' -> hexEscapeSequence
+            'u' -> unicodeEscapeSequence
+            _ -> return ch
+          (r :) <$> go isSingle
+        _ -> (ch0 :) <$> go isSingle
+
+identifier = lexeme $ do
+    c0 <- consumeChar isIDStart
+    cs <- many (consumeChar (\c -> isIDContinue c || isZeroWidth c))
+    return (c0 : cs)
+  where
+    isZeroWidth '\8204' = True
+    isZeroWidth '\8205' = True
+    isZeroWidth _ = False
+    consumeChar f = do
+      c0 <- satisfy (\c -> c `elem` "$_\\" || f c)
+      case c0 of
+        '\\' -> char 'u' >> unicodeEscapeSequence
+        _ -> return c0
+
+hexEscapeSequence = do
+  c0 <- hexDigit
+  c1 <- hexDigit
+  toEnum . fromInteger <$> numberBase 16 [c0, c1]
+
+unicodeEscapeSequence = do
+  c <- satisfy (\c -> c == '{' || isHexDigit c)
+  digits <- case c of
+    '{' -> manyTill hexDigit (char '}')
+    _ -> do
+      c0 <- hexDigit
+      c1 <- hexDigit
+      c2 <- hexDigit
+      c3 <- hexDigit
+      return [c0, c1, c2, c3]
+  toEnum . fromInteger <$> numberBase 16 digits
+
+-- Copied from parsec
+number base baseDigit = numberBase base =<< many1 baseDigit
+numberBase base digits = do
+  let n = foldl (\x d -> base*x + toInteger (digitToInt d)) 0 digits
+  seq n (return n)

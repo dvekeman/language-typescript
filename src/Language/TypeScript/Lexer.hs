@@ -13,20 +13,11 @@
 -----------------------------------------------------------------------------
 
 module Language.TypeScript.Lexer (
-  identifier
-  , reserved
-  , operator
-  , reservedOp
-  , charLiteral
-  , stringLiteral
-  , natural
+    reserved
   , integer
-  , float
-  , naturalOrFloat
   , decimal
   , hexadecimal
   , octal
-  , symbol
   , lexeme
   , whiteSpace
   , parens
@@ -38,8 +29,6 @@ module Language.TypeScript.Lexer (
   , comma
   , colon
   , dot
-  , semiSep
-  , semiSep1
   , commaSep
   , commaSep1
 ) where
@@ -62,20 +51,11 @@ typeScriptDef =	javaStyle
 
 parser                = T.makeTokenParser typeScriptDef
 
-identifier            = T.identifier parser
 reserved              = T.reserved parser
-operator              = T.operator parser
-reservedOp            = T.reservedOp parser
-charLiteral           = T.charLiteral parser
-stringLiteral         = T.stringLiteral parser
-natural               = T.natural parser
 integer               = T.integer parser
-float                 = T.float parser
-naturalOrFloat        = T.naturalOrFloat parser
 decimal               = T.decimal parser
 hexadecimal           = T.hexadecimal parser
 octal                 = T.octal parser
-symbol                = T.symbol parser
 lexeme                = T.lexeme parser
 whiteSpace            = T.whiteSpace parser
 parens                = T.parens parser
@@ -87,7 +67,5 @@ semi                  = T.semi parser
 comma                 = T.comma parser
 colon                 = T.colon parser
 dot                   = T.dot parser
-semiSep               = T.semiSep parser
-semiSep1              = T.semiSep1 parser
 commaSep              = T.commaSep parser
 commaSep1             = T.commaSep1 parser
