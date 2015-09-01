@@ -53,7 +53,7 @@ data Ambient
   | AmbientFunctionDeclaration CommentPlaceholder String ParameterListAndReturnType
   | AmbientClassDeclaration CommentPlaceholder String (Maybe [TypeParameter]) (Maybe [TypeRef]) (Maybe [TypeRef]) [(CommentPlaceholder, AmbientClassBodyElement)]
   | AmbientInterfaceDeclaration Interface
-  | AmbientEnumDeclaration CommentPlaceholder String [(String, Maybe Integer)]
+  | AmbientEnumDeclaration CommentPlaceholder (Maybe ConstEnum) String [(String, Maybe Integer)]
   | AmbientTypeAliasDeclaration TypeAlias
   | AmbientModuleDeclaration CommentPlaceholder [String] [Ambient]
   | AmbientExternalModuleDeclaration CommentPlaceholder String [AmbientExternalModuleElement]
@@ -76,6 +76,8 @@ data AmbientClassBodyElement
 data Static = Static deriving (Show, Data, Typeable)
 
 data Optional = Optional deriving (Show, Data, Typeable)
+
+data ConstEnum = ConstEnum deriving (Show, Data, Typeable)
 
 data TypeBody = TypeBody [(CommentPlaceholder, TypeMember)] deriving (Show, Data, Typeable)
 

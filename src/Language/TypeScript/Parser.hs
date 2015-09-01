@@ -40,6 +40,8 @@ stripBOM = optional (char '\65279')
 
 exported = reserved "export" >> return Exported
 
+constEnum = reserved "const" >> return ConstEnum
+
 declarationElement = choice $ map try
   [ InterfaceDeclaration <$> commentPlaceholder <*> optionMaybe exported <*> interface
   , TypeAliasDeclaration <$> commentPlaceholder <*> optionMaybe exported <*> typeAlias
@@ -68,7 +70,7 @@ ambientClassDeclaration = AmbientClassDeclaration <$> commentPlaceholder <*> (re
 
 ambientInterfaceDeclaration = AmbientInterfaceDeclaration <$> interface
 
-ambientEnumDeclaration = AmbientEnumDeclaration <$> commentPlaceholder <*> (reserved "enum" *> identifier) <*> braces (sepEndBy enumMember comma)
+ambientEnumDeclaration = AmbientEnumDeclaration <$> commentPlaceholder <*> optionMaybe constEnum <*> (reserved "enum" *> identifier) <*> braces (sepEndBy enumMember comma)
   where
   enumMember = (,) <$> propertyName <*> optionMaybe (lexeme (char '=') >> integer)
 

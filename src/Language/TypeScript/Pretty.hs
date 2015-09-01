@@ -82,7 +82,8 @@ renderAmbientDeclaration (AmbientClassDeclaration _ name ps exts imps els) =
   <+> renderMaybe implementsClause imps
   <+> braces (sepEndBy semi (renderAmbientClassBodyElement . snd ) els)
 renderAmbientDeclaration (AmbientInterfaceDeclaration i) = interface i
-renderAmbientDeclaration (AmbientEnumDeclaration _ name members) =
+renderAmbientDeclaration (AmbientEnumDeclaration _ mconst name members) =
+  renderMaybe (\ConstEnum -> text "const") mconst <+>
   text "enum" <+> text name <+> braces (sepEndBy comma enumMember members)
   where
   enumMember (name, val) = text name <+> renderMaybe (\n -> char '=' <+> integer n) val
