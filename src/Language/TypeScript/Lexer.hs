@@ -57,6 +57,7 @@ typeScriptDef =	javaStyle
       "protected", "static"
     ]
   , T.caseSensitive = True
+  , T.nestedComments = False
   }
 
 parser                = T.makeTokenParser typeScriptDef
