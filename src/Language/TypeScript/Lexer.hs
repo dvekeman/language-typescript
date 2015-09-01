@@ -63,9 +63,13 @@ braces                = T.braces parser
 angles                = T.angles parser
 brackets              = T.brackets parser
 squares               = T.brackets parser
-semi                  = T.semi parser
 comma                 = T.comma parser
 colon                 = T.colon parser
 dot                   = T.dot parser
 commaSep              = T.commaSep parser
 commaSep1             = T.commaSep1 parser
+
+-- Despite the spec not mentioning this, TypeScript has implicit
+-- semicolons, and they can be repeated.  So this just consumes them
+-- and any whitespace.
+semi                  = lexeme (many (lexeme (char ';')))
