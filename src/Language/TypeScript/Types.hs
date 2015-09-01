@@ -110,6 +110,7 @@ data Type
   | ArrayType Type
   | UnionType Type Type
   | TupleType [Type]
+  | TypeQuery [String]
   | FunctionType (Maybe [TypeParameter]) [Parameter] Type
   | ConstructorType (Maybe [TypeParameter]) [Parameter] Type
   deriving (Show, Data, Typeable)

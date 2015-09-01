@@ -268,6 +268,9 @@ _type (UnionType t1 t2) = parens $
   <+> _type t2
 _type (TupleType ts) = brackets $
   commaSep _type ts
+_type (TypeQuery xs) =
+  text "typeof"
+  <+> sepBy dot text xs
 
 typeRef :: TypeRef -> Doc
 typeRef (TypeRef n as) =
