@@ -93,8 +93,13 @@ data IndexSignature = IndexSignature String StringOrNumber Type deriving (Show, 
 data ParameterListAndReturnType = ParameterListAndReturnType (Maybe [TypeParameter]) [Parameter] (Maybe Type) deriving (Show, Data, Typeable)
 
 data Parameter
-  = RequiredOrOptionalParameter (Maybe PublicOrPrivate) String (Maybe Optional) (Maybe Type)
+  = RequiredOrOptionalParameter (Maybe PublicOrPrivate) String (Maybe Optional) (Maybe ParameterType)
   | RestParameter String (Maybe Type)
+  deriving (Show, Data, Typeable)
+
+data ParameterType
+  = ParameterType Type
+  | ParameterSpecialized String
   deriving (Show, Data, Typeable)
 
 data StringOrNumber = String | Number deriving (Show, Data, Typeable)

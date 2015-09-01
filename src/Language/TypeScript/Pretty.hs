@@ -194,6 +194,10 @@ typeMember (TypeIndexSignature i) = renderIndexSignature i
 propertyName :: String -> Doc
 propertyName = text
 
+parameterAnnotation :: ParameterType -> Doc
+parameterAnnotation (ParameterType ty) = typeAnnotation ty
+parameterAnnotation (ParameterSpecialized str) = colon <+> stringLiteral str
+
 typeAnnotation :: Type -> Doc
 typeAnnotation t = colon <+> _type t
 
@@ -214,7 +218,7 @@ parameter (RequiredOrOptionalParameter pop name opt ty) =
   renderMaybe publicOrPrivate pop
   <+> text name
   <+> renderMaybe optional opt
-  <+> renderMaybe typeAnnotation ty
+  <+> renderMaybe parameterAnnotation ty
 parameter (RestParameter name ty) =
   text "..."
   <+> text name

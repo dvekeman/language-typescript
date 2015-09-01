@@ -147,14 +147,21 @@ typeAnnotation = colon >> _type
 
 callSignature = CallSignature <$> parameterListAndReturnType
 
-parameterListAndReturnType = ParameterListAndReturnType <$> optionMaybe typeParameters <*> parens parameterList <*> optionMaybe typeAnnotation
+parameterListAndReturnType = ParameterListAndReturnType <$> optionMaybe typeParameters <*> parameterList <*> optionMaybe typeAnnotation
 
-parameterList = commaSep parameter
+parameterList = parens (commaSep parameter)
 
 parameter = choice
-  [ try $ RequiredOrOptionalParameter <$> optionMaybe publicOrPrivate <*> identifier <*> optionMaybe (lexeme (char '?' >> return Optional)) <*> optionMaybe typeAnnotation
+  [ try $ RequiredOrOptionalParameter <$> optionMaybe publicOrPrivate <*> identifier <*> optionMaybe (lexeme (char '?' >> return Optional)) <*> optionMaybe parameterAnnotation
   , RestParameter <$> (lexeme (string "...") *> identifier) <*> optionMaybe typeAnnotation
   ]
+
+parameterAnnotation = do
+  colon
+  choice $ map try
+    [ ParameterSpecialized <$> stringLiteral
+    , ParameterType <$> _type
+    ]
 
 static = reserved "static" >> return Static
 
@@ -166,7 +173,7 @@ stringOrNumber = choice
   [ reserved "string" >> return String
   , reserved "number" >> return Number ]
 
-constructSignature = ConstructSignature <$> (reserved "new" *> optionMaybe typeParameters) <*> parens parameterList <*> optionMaybe typeAnnotation
+constructSignature = ConstructSignature <$> (reserved "new" *> optionMaybe typeParameters) <*> parameterList <*> optionMaybe typeAnnotation
 
 typeIndexSignature = TypeIndexSignature <$> indexSignature
 
@@ -201,8 +208,8 @@ _type = lexeme $ choice [ try functionType, try constructorType, unionType ]
     , ObjectType <$> objectType
     , TupleType <$> squares (_type `sepBy` lexeme (string ","))
     ]
-  functionType = FunctionType <$> optionMaybe typeParameters <*> parens parameterList <*> returnType
-  constructorType = ConstructorType <$> (reserved "new" *> optionMaybe typeParameters) <*> parens parameterList <*> returnType
+  functionType = FunctionType <$> optionMaybe typeParameters <*> parameterList <*> returnType
+  constructorType = ConstructorType <$> (reserved "new" *> optionMaybe typeParameters) <*> parameterList <*> returnType
   returnType = lexeme (string "=>") *> _type
   typeQuery = reserved "typeof" *> sepBy1 identifier dot
 
