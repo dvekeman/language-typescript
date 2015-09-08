@@ -280,7 +280,13 @@ stringLiteral = lexeme $ do
           (r :) <$> go isSingle
         _ -> (ch0 :) <$> go isSingle
 
-identifier = lexeme $ do
+identifier = lexeme $ try $ do
+  name <- ident
+  if name `elem` reservedNames
+    then unexpected $ "reserved word " ++ show name
+    else return name
+
+ident = do
     c0 <- consumeChar isIDStart
     cs <- many (consumeChar (\c -> isIDContinue c || isZeroWidth c))
     return (c0 : cs)

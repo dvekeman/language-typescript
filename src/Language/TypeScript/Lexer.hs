@@ -13,7 +13,8 @@
 -----------------------------------------------------------------------------
 
 module Language.TypeScript.Lexer (
-    reserved
+    reservedNames
+  , reserved
   , integer
   , decimal
   , hexadecimal
@@ -39,15 +40,17 @@ import Text.Parsec.Language
 
 typeScriptDef =	javaStyle
   { T.identStart = oneOf "_$" <|> letter
-  , T.reservedNames = [
-      "break", "do", "instanceof", "typeof", "case", "else", "new", "var", "catch", "finally", "return", "void", "continue", "for",
-      "switch", "while", "debugger", "function", "this", "with", "default", "if", "throw", "delete", "in", "try", "class", "enum",
-      "extends", "super", "const", "export", "import", "implements", "let", "private", "public", "yield", "interface", "package",
-      "protected", "static"
-    ]
+  , T.reservedNames = reservedNames
   , T.caseSensitive = True
   , T.nestedComments = False
   }
+
+reservedNames =
+  [ "break", "do", "instanceof", "typeof", "case", "else", "new", "var", "catch", "finally", "return", "void", "continue", "for"
+  , "switch", "while", "debugger", "function", "this", "with", "default", "if", "throw", "delete", "in", "try", "class", "enum"
+  ,   "extends", "super", "const", "export", "import", "implements", "let", "private", "public", "yield", "interface", "package"
+  ,  "protected", "static"
+  ]
 
 parser                = T.makeTokenParser typeScriptDef
 
