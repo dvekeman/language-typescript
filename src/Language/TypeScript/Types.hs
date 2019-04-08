@@ -17,7 +17,7 @@
 module Language.TypeScript.Types where
 
 import qualified Data.Map as M
-import Data.Monoid
+import Data.Semigroup
 import Data.Data (Typeable, Data)
 
 data Comment = Comment
@@ -28,6 +28,9 @@ data Comment = Comment
 instance Monoid Comment where
   mempty = Comment [] []
   mappend (Comment ts os) (Comment ts' os') = Comment (ts ++ ts') (os ++ os')
+
+instance Semigroup Comment where
+  (<>) = mappend
 
 type CommentPlaceholder = Either (Int, Int) Comment
 
@@ -54,6 +57,7 @@ data Ambient
   | AmbientEnumDeclaration CommentPlaceholder (Maybe ConstEnum) String [(String, Maybe Integer)]
   | AmbientTypeAliasDeclaration TypeAlias
   | AmbientModuleDeclaration CommentPlaceholder [String] [Ambient]
+  | AmbientNamespaceDeclaration CommentPlaceholder [String] [Ambient]
   | AmbientExternalModuleDeclaration CommentPlaceholder String [AmbientExternalModuleElement]
   | AmbientImportDeclaration CommentPlaceholder String EntityName
   | AmbientExternalImportDeclaration CommentPlaceholder String String
@@ -106,10 +110,12 @@ data StringOrNumber = String | Number deriving (Show, Data, Typeable)
 
 data PublicOrPrivate = Public | Private deriving (Show, Data, Typeable)
 
-data TypeParameter = TypeParameter String (Maybe Type) deriving (Show, Data, Typeable)
+data TypeParameter =
+  PartialTypeParameter (Maybe Type)
+  | TypeParameter String (Maybe Type) deriving (Show, Data, Typeable)
 
 data Type
-  = Predefined PredefinedType
+  = Predefined CommentPlaceholder PredefinedType
   | TypeReference TypeRef
   | ObjectType TypeBody
   | ArrayType Type
@@ -126,8 +132,9 @@ data ModuleName = ModuleName [String] deriving (Show, Data, Typeable)
 
 data PredefinedType
   = AnyType
-  | NumberType
+  | NumberType (Maybe String)
   | BooleanType
-  | StringType
+  | StringType (Maybe [String])
+  | NullType
   | VoidType
   deriving (Show, Data, Typeable)

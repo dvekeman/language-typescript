@@ -2,3 +2,7 @@ dist
 *.o
 *.hi
 *.lksh*
+
+.stack-work/
+language-typescript.cabal
+*~

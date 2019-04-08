@@ -43,6 +43,8 @@ typeScriptDef =	javaStyle
   , T.reservedNames = reservedNames
   , T.caseSensitive = True
   , T.nestedComments = False
+  , T.commentLine = "//"
+  , T.commentStart = ""
   }
 
 reservedNames =
@@ -71,6 +73,7 @@ colon                 = T.colon parser
 dot                   = T.dot parser
 commaSep              = T.commaSep parser
 commaSep1             = T.commaSep1 parser
+symbol                = T.symbol parser
 
 -- Despite the spec not mentioning this, TypeScript has implicit
 -- semicolons, and they can be repeated.  So this just consumes them

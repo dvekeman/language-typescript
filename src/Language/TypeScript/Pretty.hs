@@ -18,6 +18,7 @@ module Language.TypeScript.Pretty (
 
 import Language.TypeScript.Types
 import Text.PrettyPrint
+import Prelude hiding ( (<>) )
 
 renderDeclarationSourceFile :: [DeclarationElement] -> String
 renderDeclarationSourceFile = render . declarationSourceFile
@@ -239,13 +240,16 @@ typeParameters :: [TypeParameter] -> Doc
 typeParameters ps = char '<' <+> commaSep typeParameter ps <+> char '>'
 
 typeParameter :: TypeParameter -> Doc
+typeParameter (PartialTypeParameter ext) =
+  text "Partial"
+  <+> renderMaybe (\t -> text "extends" <+> _type t) ext
 typeParameter (TypeParameter name ext) =
   text name
   <+> renderMaybe (\t -> text "extends" <+> _type t) ext
 
 _type :: Type -> Doc
 _type (ArrayType t) = _type t <+> text "[]"
-_type (Predefined p) = predefinedType p
+_type (Predefined _ p) = predefinedType p
 _type (TypeReference r) = typeRef r
 _type (ObjectType o) = objectType o
 -- TSS(3.7): Parentheses are required around union, function, or
@@ -283,10 +287,13 @@ typeRef (TypeRef n as) =
 
 predefinedType :: PredefinedType -> Doc
 predefinedType AnyType = text "any"
-predefinedType NumberType = text "number"
+predefinedType (NumberType Nothing) = text "number"
+predefinedType (NumberType (Just val)) = text "number" <+> text "/*" <+> text val <+> text "*/"
 predefinedType BooleanType = text "boolean"
-predefinedType StringType = text "string"
+predefinedType (StringType Nothing) = text "string"
+predefinedType (StringType (Just vals)) = text "string" <+> text "/*" <+> sepBy (text " | ") text vals <+> text "*/"
 predefinedType VoidType = text "void"
+predefinedType NullType = text "null"
 
 typeName :: TypeName -> Doc
 typeName (TypeName Nothing t) = text t

@@ -1,0 +1,27 @@
+name: language-typescript
+version: '0.0.4'
+synopsis: A library for working with TypeScript Definition files
+description: A library for working with TypeScript Definition files
+category: Language
+author: Phillip Freeman <paf31@cantab.net>
+maintainer: Phillip Freeman <paf31@cantab.net>
+copyright: (c) DICOM Grid Inc. 2013
+license: MIT
+homepage: http://github.com/paf31/language-typescript
+dependencies:
+- base >=3 && <=5
+- containers
+- parsec
+- pretty
+- array
+library:
+  source-dirs: src
+  ghc-options:
+    - -Wall
+  exposed-modules:
+  - Language.TypeScript.Pretty
+  - Language.TypeScript
+  - Language.TypeScript.Parser
+  - Language.TypeScript.Lexer
+  - Language.TypeScript.Types
+stability: experimental
