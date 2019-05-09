@@ -29,6 +29,7 @@ import Data.Functor.Identity (Identity)
 import Data.List (nub)
 
 import Debug.Trace
+import Data.Functor (($>))
 
 commentPlaceholder :: ParsecT String u Identity (Either (Line, Column) Comment)
 commentPlaceholder = do
@@ -56,6 +57,11 @@ stripBOM = optional (char '\65279')
 exported :: ParsecT String u Identity Exported
 exported = reserved "export" >> return Exported
 
+exportedAs :: ParsecT String u Identity Exported
+exportedAs = reserved "export" >> optionMaybe (reserved "as") >> return Exported
+
+defaulted :: ParsecT String u Identity Defaulted
+defaulted = reserved "default" >> return Defaulted
 
 constEnum :: ParsecT String u Identity ConstEnum
 constEnum = reserved "const" >> return ConstEnum
@@ -67,6 +73,8 @@ declarationElement = choice $ map try
   , TypeAliasDeclaration <$> commentPlaceholder <*> optionMaybe exported <*> typeAlias
   , ExportDeclaration <$> (reserved "export" >> lexeme (char '=') *> identifier)
   , AmbientDeclaration <$> commentPlaceholder <*> optionMaybe exported <*> (reserved "declare" *> ambientDeclaration)
+  , AmbientDeclaration <$> commentPlaceholder <*> optionMaybe exportedAs <* optionMaybe defaulted <*> ambientDeclaration
+  , Unsupported <$> many1 (satisfy (/= '\n')) <* semi
   ]
 
 ambientDeclaration :: ParsecT String u Identity Ambient
@@ -130,8 +138,12 @@ ambientModuleDeclaration = AmbientModuleDeclaration <$> commentPlaceholder <*> (
 
 
 ambientNamespaceDeclaration :: ParsecT String u Identity Ambient
-ambientNamespaceDeclaration = AmbientNamespaceDeclaration <$> commentPlaceholder <*> (reserved "namespace" *> sepBy identifier dot) <*> braces (many (optionMaybe exported *> ambientDeclaration))
-
+ambientNamespaceDeclaration = AmbientNamespaceDeclaration <$> commentPlaceholder <*> (reserved "namespace" *> sepBy identifier dot) <*>
+  choice (map try
+    [ braces (many (optionMaybe exported *> ambientDeclaration))
+    , semi $> []
+    ]
+  )
 
 ambientExternalModuleDeclaration :: ParsecT String u Identity Ambient
 ambientExternalModuleDeclaration = AmbientExternalModuleDeclaration <$> commentPlaceholder <*> (reserved "module" *> stringLiteral) <*> braces (many ambientExternalModuleElement)
@@ -145,9 +157,15 @@ ambientExternalModuleElement = choice (map try
 
 ambientImportDeclaration :: ParsecT String u Identity Ambient
 ambientImportDeclaration =
-  AmbientImportDeclaration <$> commentPlaceholder
-                           <*> (reserved "import" *> identifier)
-                           <*> (lexeme (char '=') *> entityName <* semi)
+--  choice $ map try [
+    AmbientImportDeclaration <$> commentPlaceholder
+                             <*> (reserved "import" *> identifier)
+                             <*> (lexeme (char '=') *> entityName <* semi)
+--  -- import { foo , bar } from "module-name/path/to/specific/un-exported/file";
+--  , AmbientPathImportDeclaration <$> commentPlaceholder
+--                             <*> ( reserved "import" *> between (symbol "{") (symbol "}") (commaSep (optionMaybe (reserved "default as") *> identifier)) )
+--                             <*> ( reserved "from" *> between quote quote (optionMaybe (string "./") *> identifier `sepBy` char '/') <* semi )
+--  ]
 
 
 ambientExternalImportDeclaration :: ParsecT String u Identity Ambient
@@ -162,7 +180,7 @@ exportAssignment = ExportAssignment <$> (optionMaybe exported *> lexeme (char '=
 
 
 ambientClassBodyElement :: ParsecT String u Identity (Either (Line, Column) Comment, AmbientClassBodyElement)
-ambientClassBodyElement = (,) <$> commentPlaceholder <*> (choice $ map try
+ambientClassBodyElement = (,) <$> commentPlaceholder <*> choice (map try
   [ ambientConstructorDeclaration
   , ambientMemberDeclaration
   , ambientIndexSignature ])
@@ -185,7 +203,10 @@ interface = Interface <$> commentPlaceholder <*> (reserved "interface" *> identi
 
 
 typeAlias :: ParsecT String u Identity TypeAlias
-typeAlias = TypeAlias <$> commentPlaceholder <*> (reserved "type" *> identifier) <*> (lexeme (char '=') *> _type <* semi)
+typeAlias =
+  TypeAlias <$> commentPlaceholder <*> typeAliasName <*> (lexeme (char '=') *> _type <* semi)
+  -- TODO: this is currently not supported: export type LocationDescriptor<S = LocationState> = Path
+  where typeAliasName = (reserved "type" *> identifier) <* optionMaybe typeParameters
 
 
 extendsClause :: ParsecT String u Identity [TypeRef]
@@ -207,7 +228,7 @@ objectType = braces typeBody
 typeBody :: ParsecT String u Identity TypeBody
 typeBody = TypeBody <$> sepEndBy typeMember semi
   where
-  typeMember = (,) <$> commentPlaceholder <*> (choice $ map try [ methodSignature, propertySignature, callSignature, constructSignature, typeIndexSignature ])
+  typeMember = (,) <$> commentPlaceholder <*> choice ( map try [ methodSignature, propertySignature, callSignature, constructSignature, typeIndexSignature ])
 
 
 propertySignature :: ParsecT String u Identity TypeMember
@@ -299,9 +320,9 @@ typeParameters = angles $ commaSep1 typeParameter
 
 typeParameter :: ParsecT String u Identity TypeParameter
 typeParameter =
-  choice [
-    try $ PartialTypeParameter <$> (reserved "Partial" *> optionMaybe (reserved "extends" >> _type))
-  , TypeParameter <$> identifier <*> optionMaybe (reserved "extends" >> _type)
+  choice $ map try
+  [ PartialTypeParameter <$> (reserved "Partial" *> optionMaybe ( choice ( map try [reserved "extends", reserved "=" ] ) >> _type))
+  , TypeParameter <$> identifier <*> optionMaybe ( choice ( map try [reserved "extends", reserved "=" ] ) >> _type)
   ]
 
 
@@ -358,6 +379,9 @@ predefinedType = choice
   ]
 
 
+modulePath :: ParsecT String u Identity EntityName
+modulePath = lexeme (char '\'') *> (EntityName Nothing <$> manyTill anyChar (char '\''))
+
 entityName :: ParsecT String u Identity EntityName
 entityName = fmap toEntityName (sepBy1 identifier dot)
   where
@@ -412,7 +436,7 @@ stringLiteral = lexeme $ do
         _ -> (ch0 :) <$> go isSingle
 
 
-identifier :: ParsecT String u Identity [Char]
+identifier :: ParsecT String u Identity String
 identifier = lexeme $ try $ do
   name <- ident
   if name `elem` reservedNames
@@ -517,3 +541,6 @@ notEndOfLine     = try (do{ c <- try endOfLine; unexpected (show c) }
 trim :: String -> String
 trim = f . f
    where f = reverse . dropWhile isSpace
+
+quote :: ParsecT String u Identity String
+quote = choice $ map try [ symbol "'", symbol "\"" ]

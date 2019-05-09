@@ -39,9 +39,12 @@ data DeclarationElement
   | TypeAliasDeclaration CommentPlaceholder (Maybe Exported) TypeAlias
   | ExportDeclaration String
   | AmbientDeclaration CommentPlaceholder (Maybe Exported) Ambient
+  | Unsupported String
   deriving (Show, Data, Typeable)
 
 data Exported = Exported deriving (Show, Data, Typeable)
+
+data Defaulted = Defaulted deriving (Show, Data, Typeable)
 
 data EntityName = EntityName (Maybe ModuleName) String deriving (Show, Data, Typeable)
 

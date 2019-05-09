@@ -32,6 +32,7 @@ module Language.TypeScript.Lexer (
   , dot
   , commaSep
   , commaSep1
+  , symbol
 ) where
 
 import Text.Parsec
